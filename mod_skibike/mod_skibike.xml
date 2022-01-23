@@ -2,20 +2,23 @@
 <extension type="module" version="3.1" client="site" method="upgrade">
     <name>mod_skibike</name>
     <author>Tobias Mueller</author>
-    <creationDate>Juli 2017</creationDate>
-    <copyright>Copyright (C) 2017 TVL Ski und Bike</copyright>
+    <creationDate>Januar 2022</creationDate>
+    <copyright>Copyright (C) 2017 - 2022 TVL Ski und Bike</copyright>
     <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
     <authorEmail>email@nomail.com</authorEmail>
-    <authorUrl>www.yoursite.any</authorUrl>
-    <version>1.0.0</version>
+    <authorUrl>www.nosite.any</authorUrl>
+    <version>1.1.0</version>
     <description>Ski und Bike Module</description>
     <files>
         <filename module="mod_skibike">css_styles.php</filename>
+
+        <filename module="mod_skibike">abrechnung.php</filename>
         <filename module="mod_skibike">bestand.php</filename>
-        <filename module="mod_skibike">uebersicht.php</filename>
+        <filename module="mod_skibike">export.php</filename>
         <filename module="mod_skibike">funktionen.php</filename>
         <filename module="mod_skibike">letztebuchungen.php</filename>
         <filename module="mod_skibike">teilnehmer.php</filename>
+        <filename module="mod_skibike">uebersicht.php</filename>
 
         <filename module="mod_skibike">sendmail.png</filename>
     </files>
