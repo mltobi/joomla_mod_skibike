@@ -12,6 +12,7 @@ include 'css_styles.php';
 
 // open database
 $db = JFactory::getDBO();
+$db1 = JFactory::getDBO();
 
 
 // get GET and POST variables
@@ -25,6 +26,7 @@ else {
 // get date minus 5 months
 $fivemonth = date("Y-m-d", strtotime("-5 months"));
 
+// provide a select field for all products
 echo "<form action='#' method='post' name='eventForm'>\n";
 echo "  <select name='selectEvent' onchange='eventForm.submit()'>\n";
 echo "    <option value=\"\">Bitte ausw&auml;hlen</option>\n";
@@ -36,6 +38,7 @@ $query = $db->getQuery(true)
             ->order("product_sku");
 $db->setQuery($query);
 
+// add option for each product to select field
 foreach($db->loadObjectList() as $row)
 {
   $event = $row->product_name;
@@ -51,10 +54,13 @@ echo "  <noscript><input type='submit' name='submitBtn' value='Ausw&auml;hlen'><
 echo "</form>\n";
 echo "<br />\n";
 
+// check if a product is selected
 $event = str_replace("'", "\\'", $eventEntry); // escape "'"
 if( $event != "" ) {
+
   echo "<p>Gew&auml;hlte Fahrt: <b>$event</b> <br />\n";
 
+  // get number of avaiable and booked
   $query = $db->getQuery(true)
               ->select("product_in_stock, product_ordered")
               ->from("joomla_virtuemart_products_de_de pdd, joomla_virtuemart_products p")
@@ -252,27 +258,71 @@ if( $orderNumber != '' ) {
   echo "</form>\n";
 }
 
-// Todo: über alle order items und für jedes produkt den Bestand erhöhen (storno) bzw. verringern (kein storno)
-// UPDATE joomla_virtuemart_products p, joomla_virtuemart_order_items oi, joomla_virtuemart_orders o set p.product_in_stock = p.product_in_stock + 1 WHERE p.virtuemart_product_id = oi.virtuemart_product_id and o.virtuemart_order_id = oi.virtuemart_order_id AND o.order_number = "B201711-00014" 
 if( $storno == "JA" ) {
+
+  // set complete order to denied
   $query = $db->getQuery(true)
               ->update("joomla_virtuemart_orders")
               ->set("order_status = 'D'")
               ->where("order_number = '$orderNumber'");
+  $db->setQuery($query); $db->execute();
+  $db->execute();
+
+  // get order id of order to deny
+  $query = $db->getQuery(true)
+              ->select("virtuemart_order_id")
+              ->from("joomla_virtuemart_orders o")
+              ->where("order_number = '$orderNumber'");
+  $db->setQuery($query);
+  $orderid = $db->loadObjectList();
+  $orderid = $orderid[0];
+
+  // set all products of order to deny
+  $query = $db->getQuery(true)
+              ->update("joomla_virtuemart_order_items")
+              ->set("order_status = 'D'")
+              ->where("virtuemart_order_id = '$orderid->virtuemart_order_id'");
   $db->setQuery($query);
   $db->execute();
+
+  // get all product SKUs
+  $query = $db->getQuery(true)
+              ->select("order_item_sku")
+              ->from("joomla_virtuemart_order_items o")
+              ->where("virtuemart_order_id = '$orderid->virtuemart_order_id'");
+  $db->setQuery($query);
+
+  // increase all stocks by one for each found product SKU
+  $items = $db->loadObjectList();
+  foreach($items as $sku)
+  {
+    // get current number in stock
+    $query1 = $db1->getQuery(true)
+                  ->select("product_in_stock")
+                  ->from("joomla_virtuemart_products p")
+                  ->where("product_sku = '$sku->order_item_sku'");
+    $db1->setQuery($query1);
+    $stockArr = $db->loadObjectList();
+    $stock = $stockArr[0];
+
+    // increase stock by one
+    $stockNbr = $stock->product_in_stock + 1;
+
+    // update stock in database
+    $query1 = $db1->getQuery(true)
+                ->update("joomla_virtuemart_products")
+                ->set("product_in_stock = '$stockNbr'")
+                ->where("product_sku = '$sku->order_item_sku'");
+    $db1->setQuery($query1);
+    $db1->execute();
+  }
 
   echo "Storniert!";
 }
 else if ($storno == "NEIN" ) {
-  $query = $db->getQuery(true)
-              ->update("joomla_virtuemart_orders")
-              ->set("order_status = 'C'")
-              ->where("order_number = '$orderNumber'");
-  $db->setQuery($query);
-  $db->execute();
 
-  echo "Stornierung zur&uuml;ckgenommen!";
+  echo "Nicht storniert!";
+
 }
 
 echo "<script type=\"text/javascript\">\n";
@@ -281,6 +331,7 @@ echo "var table = document.getElementById('table');\n";
 echo "// add one event handler to the table\n";
 echo "table.onclick = function (e) {\n";
 echo "  // normalize event\n";
+
 echo "  e = e || window.event;\n"; 
 echo "  // find out which element was clicked\n";
 echo "  var el =  e.target || e.srcElement;\n";
